@@ -1,0 +1,1605 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Mis Listas</title>
+<meta name="theme-color" content="#1e293b">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #f8fafc; color: #334155; padding-bottom: 48px; }
+  .header { background: #1e293b; color: #fff; padding: 26px 20px 22px; border-radius: 0 0 20px 20px; margin-bottom: 20px; }
+  .header-inner { max-width: 640px; margin: 0 auto; }
+  .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .header h1 { font-size: 22px; font-weight: 700; }
+  .header .sub { font-size: 12px; opacity: 0.5; margin-top: 2px; }
+  .saved-badge { font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 99px; background: transparent; color: transparent; border: 1px solid transparent; transition: all .3s; }
+  .saved-badge.show { background: #22c55e22; color: #4ade80; border-color: #4ade8055; }
+  .progress-box { background: rgba(255,255,255,0.08); border-radius: 12px; padding: 12px 16px; }
+  .progress-label { display: flex; justify-content: space-between; margin-bottom: 7px; font-size: 13px; }
+  .progress-label .pct { font-weight: 700; }
+  .progress-track { background: rgba(255,255,255,0.15); border-radius: 99px; height: 6px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 99px; background: #f59e0b; transition: width .4s ease; width: 0%; }
+  .container { max-width: 640px; margin: 0 auto; padding: 0 14px; }
+  .filters { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; align-items: center; }
+  .filter-btn { padding: 7px 15px; border-radius: 99px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; background: #fff; color: #64748b; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .filter-btn.active { background: #1e293b; color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.18); }
+  .clear-btn { margin-left: auto; padding: 7px 15px; border-radius: 99px; border: 1.5px solid #fca5a5; background: #fff; color: #dc2626; cursor: pointer; font-size: 12px; font-weight: 600; }
+  .cat { background: #fff; border-radius: 16px; margin-bottom: 16px; overflow: hidden; box-shadow: 0 1px 6px rgba(0,0,0,0.07); }
+  .cat-head { padding: 13px 16px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #f1f5f9; }
+  .cat-drag { cursor: grab; color: #cbd5e1; font-size: 15px; line-height: 1; flex-shrink: 0; touch-action: none; user-select: none; }
+  .cat-drag:active { cursor: grabbing; }
+  .cat-chevron { background: none; border: none; cursor: pointer; color: #64748b; font-size: 14px; padding: 2px 4px; line-height: 1; transition: transform .2s; flex-shrink: 0; }
+  .cat-chevron.collapsed { transform: rotate(-90deg); }
+  .cat-edit { background: none; border: none; color: #cbd5e1; cursor: pointer; font-size: 15px; padding: 0 2px; line-height: 1; }
+  .cat-edit:hover { color: #2563eb; }
+  .cat-edit-icon { width: 44px; text-align: center; font-size: 18px; padding: 6px 0; border-radius: 7px; border: 1.5px solid #e2e8f0; outline: none; flex-shrink: 0; }
+  .cat-edit-name { flex: 1; min-width: 0; padding: 7px 10px; border-radius: 7px; font-size: 14px; font-weight: 600; outline: none; color: #1e293b; }
+  .cat-edit-ok { color: #fff; border: none; border-radius: 7px; padding: 7px 14px; cursor: pointer; font-weight: 700; font-size: 14px; flex-shrink: 0; }
+  .cat-dragging { opacity: 0.5; }
+  .cat-drag-over { outline: 2px dashed #1e293b; outline-offset: -2px; }
+  .cat-head .icon { font-size: 20px; }
+  .cat-head .label { font-weight: 700; font-size: 15px; color: #0f172a; flex: 1; cursor: pointer; }
+  .cat-count { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 99px; }
+  .empty { padding: 16px 18px; color: #cbd5e1; font-size: 13px; font-style: italic; }
+  .item { padding: 10px 16px; border-bottom: 1px solid #f8fafc; }
+  .item.done { background: #f0fdf4; }
+  .item-row { display: flex; align-items: flex-start; gap: 10px; }
+  .drag-handle { cursor: grab; color: #cbd5e1; font-size: 16px; line-height: 1; padding: 2px 2px 0; flex-shrink: 0; touch-action: none; user-select: none; }
+  .drag-handle:active { cursor: grabbing; }
+  .item.dragging { opacity: 0.5; }
+  .item.drag-over { border-top: 2px solid #1e293b; }
+  .check { width: 21px; height: 21px; border-radius: 6px; border: 2px solid #cbd5e1; flex-shrink: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; margin-top: 2px; transition: all .2s; }
+  .check svg { display: none; }
+  .item.done .check svg { display: block; }
+  .item-text { flex: 1; font-size: 14px; line-height: 1.5; color: #334155; cursor: text; word-break: break-word; }
+  .item.done .item-text { color: #94a3b8; text-decoration: line-through; }
+  .item-text-input { flex: 1; font-size: 14px; border-radius: 6px; padding: 3px 8px; outline: none; color: #1e293b; }
+  .del-btn { background: none; border: none; color: #cbd5e1; cursor: pointer; font-size: 22px; padding: 0 4px; line-height: 1; flex-shrink: 0; font-weight: 300; }
+  .del-btn:hover { color: #ef4444; }
+  .strip { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; align-items: center; padding-left: 31px; }
+  .links { display: flex; flex-direction: column; gap: 5px; margin-top: 7px; padding-left: 31px; }
+  .yt-link { display: flex; align-items: center; gap: 9px; background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 9px; padding: 6px 8px; text-decoration: none; transition: background .15s; }
+  .yt-link:hover { background: #f1f5f9; }
+  .yt-thumb { width: 56px; height: 38px; border-radius: 6px; object-fit: cover; flex-shrink: 0; background: #e2e8f0; }
+  .yt-meta { flex: 1; min-width: 0; }
+  .yt-title { font-size: 12.5px; color: #1e293b; font-weight: 600; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .yt-host { font-size: 11px; color: #94a3b8; margin-top: 1px; display: flex; align-items: center; gap: 4px; }
+  .yt-del { background: none; border: none; color: #cbd5e1; cursor: pointer; font-size: 18px; padding: 0 4px; line-height: 1; flex-shrink: 0; }
+  .yt-del:hover { color: #ef4444; }
+  .add-link-btn { display: inline-flex; align-items: center; gap: 5px; background: none; border: none; cursor: pointer; font-size: 12.5px; font-weight: 600; padding: 4px 0; align-self: flex-start; }
+  .subcat { margin: 8px 12px; border: 1px solid #f1f5f9; border-radius: 12px; overflow: hidden; }
+  .subcat-head { padding: 10px 12px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #f1f5f9; }
+  .add-sub-btn { display: flex; align-items: center; gap: 6px; padding: 10px 16px; background: none; border: none; cursor: pointer; font-size: 13px; font-weight: 600; width: 100%; text-align: left; opacity: 0.85; }
+  .attach-flag { font-size: 14px; opacity: 0.7; }
+  .attach-flag-btn { background: none; border: none; cursor: pointer; font-size: 15px; padding: 0 3px; line-height: 1; flex-shrink: 0; }
+  .attach-flag-btn.off { opacity: 0.55; }
+  .attach-toggle { border: 1.5px solid #e2e8f0; background: #f8fafc; border-radius: 7px; padding: 6px 9px; cursor: pointer; font-size: 15px; flex-shrink: 0; opacity: 0.4; filter: grayscale(1); }
+  .attach-toggle.on { opacity: 1; filter: none; border-color: #86efac; background: #f0fdf4; }
+  .desc-wrap { padding-left: 31px; margin-top: 3px; }
+  .desc-text { font-size: 12.5px; color: #64748b; line-height: 1.45; white-space: pre-wrap; cursor: text; padding: 2px 0; }
+  .item.done .desc-text { color: #b0bcca; }
+  .desc-input { width: 100%; font-size: 12.5px; color: #334155; border-radius: 7px; padding: 6px 9px; outline: none; resize: vertical; font-family: inherit; line-height: 1.45; }
+  .add-desc-btn { background: none; border: none; cursor: pointer; font-size: 11.5px; font-weight: 600; padding: 2px 0; opacity: 0.65; }
+  .add-desc-btn:hover { opacity: 1; }
+  .thumb-wrap { position: relative; flex-shrink: 0; }
+  .thumb { width: 52px; height: 52px; object-fit: cover; border-radius: 7px; cursor: zoom-in; display: block; }
+  .thumb-del { position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; border-radius: 50%; background: #ef4444; border: none; color: #fff; font-size: 11px; cursor: pointer; line-height: 1; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 4px rgba(0,0,0,0.25); }
+  .upload-wrap { position: relative; width: 46px; height: 46px; flex-shrink: 0; }
+  .upload-face { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 20px; pointer-events: none; border-radius: 7px; }
+  .upload-input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+  .add-btn { display: flex; align-items: center; gap: 6px; padding: 10px 16px; background: none; border: none; cursor: pointer; font-size: 13px; font-weight: 600; width: 100%; text-align: left; }
+  .add-btn .plus { font-size: 17px; }
+  .add-row { padding: 10px 16px; display: flex; gap: 8px; }
+  .add-input { flex: 1; padding: 8px 12px; border-radius: 8px; font-size: 14px; outline: none; color: #1e293b; }
+  .add-ok { color: #fff; border: none; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-weight: 700; font-size: 13px; }
+  .add-cancel { background: #f1f5f9; color: #64748b; border: none; border-radius: 8px; padding: 8px 11px; cursor: pointer; font-size: 13px; }
+  .foot { text-align: center; color: #cbd5e1; font-size: 11px; margin-top: 4px; }
+  .backup-row { display: flex; gap: 10px; margin: 4px 0 14px; }
+  .backup-btn { flex: 1; background: #fff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 12px; cursor: pointer; font-size: 13px; font-weight: 600; color: #475569; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .backup-btn:hover { border-color: #94a3b8; color: #1e293b; }
+  .new-cat-btn { display: block; width: 100%; padding: 14px; border-radius: 16px; border: 2px dashed #cbd5e1; background: #fff; color: #64748b; cursor: pointer; font-size: 14px; font-weight: 600; margin-bottom: 16px; }
+  .new-cat-btn:hover { border-color: #94a3b8; color: #475569; }
+  .cat-del { background: none; border: none; color: #cbd5e1; cursor: pointer; font-size: 18px; padding: 0 2px; line-height: 1; }
+  .cat-del:hover { color: #ef4444; }
+  .new-cat-row { background: #fff; border-radius: 16px; padding: 14px 16px; margin-bottom: 16px; box-shadow: 0 1px 6px rgba(0,0,0,0.07); }
+  .new-cat-row .nc-line { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .nc-icon { width: 50px; text-align: center; font-size: 20px; padding: 8px 0; border-radius: 8px; border: 1.5px solid #e2e8f0; outline: none; }
+  .nc-name { flex: 1; padding: 8px 12px; border-radius: 8px; border: 1.5px solid #e2e8f0; font-size: 14px; outline: none; }
+  .nc-colors { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 10px; }
+  .nc-color { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; }
+  .nc-color.sel { border-color: #1e293b; }
+  .nc-actions { display: flex; gap: 8px; }
+  .nc-ok { flex: 1; background: #1e293b; color: #fff; border: none; border-radius: 8px; padding: 9px; cursor: pointer; font-weight: 700; font-size: 13px; }
+  .nc-cancel { background: #f1f5f9; color: #64748b; border: none; border-radius: 8px; padding: 9px 16px; cursor: pointer; font-size: 13px; }
+  /* Lightbox */
+  .lb { position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 1000; display: none; align-items: center; justify-content: center; }
+  .lb.open { display: flex; }
+  .lb-img { width: auto; height: auto; max-width: 100vw; max-height: 100vh; object-fit: contain; cursor: zoom-in; transform-origin: center center; touch-action: none; will-change: transform; }
+  .lb-img.zoomed { cursor: grab; }
+  .lb-nav { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.15); border: none; color: #fff; font-size: 28px; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .lb-prev { left: 14px; } .lb-next { right: 14px; }
+  .lb-close { position: absolute; top: 16px; right: 16px; background: #fff; border: none; border-radius: 50%; width: 34px; height: 34px; cursor: pointer; font-size: 18px; }
+  .lb-count { position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); color: #fff; font-size: 13px; opacity: 0.7; }
+  /* Cropper */
+  .cropper { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1100; display: none; align-items: center; justify-content: center; padding: 16px; }
+  .cropper.open { display: flex; }
+  .crop-panel { background: #fff; border-radius: 16px; padding: 16px; max-width: 92vw; width: 460px; max-height: 92vh; display: flex; flex-direction: column; }
+  .crop-title { font-weight: 700; font-size: 16px; color: #0f172a; margin-bottom: 12px; text-align: center; }
+  .crop-stage { position: relative; flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #1e293b; border-radius: 10px; touch-action: none; user-select: none; }
+  .crop-stage img { max-width: 100%; max-height: 60vh; display: block; pointer-events: none; }
+  .crop-box { position: absolute; border: 2px solid #fff; box-shadow: 0 0 0 9999px rgba(0,0,0,0.45); cursor: move; box-sizing: border-box; }
+  .crop-handle { position: absolute; width: 26px; height: 26px; background: rgba(255,255,255,0.001); }
+  .crop-handle::after { content: ""; position: absolute; width: 14px; height: 14px; background: #fff; border: 2px solid #1e293b; border-radius: 50%; }
+  .crop-handle.tl { top: -13px; left: -13px; cursor: nwse-resize; } .crop-handle.tl::after { top: 0; left: 0; }
+  .crop-handle.tr { top: -13px; right: -13px; cursor: nesw-resize; } .crop-handle.tr::after { top: 0; right: 0; }
+  .crop-handle.bl { bottom: -13px; left: -13px; cursor: nesw-resize; } .crop-handle.bl::after { bottom: 0; left: 0; }
+  .crop-handle.br { bottom: -13px; right: -13px; cursor: nwse-resize; } .crop-handle.br::after { bottom: 0; right: 0; }
+  .crop-actions { display: flex; gap: 8px; margin-top: 14px; }
+  .crop-skip { flex: 1; background: #f1f5f9; color: #475569; border: none; border-radius: 8px; padding: 11px; cursor: pointer; font-size: 14px; font-weight: 600; }
+  .crop-ok { flex: 2; background: #1e293b; color: #fff; border: none; border-radius: 8px; padding: 11px; cursor: pointer; font-size: 14px; font-weight: 700; }
+  .crop-cancel { background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 13px; padding: 10px; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="header-top">
+      <div>
+        <h1>Mis Listas</h1>
+        <div class="sub">Checklist personal · Guardado en este dispositivo</div>
+      </div>
+      <div class="saved-badge" id="savedBadge">✓ Guardado</div>
+    </div>
+    <div class="progress-box">
+      <div class="progress-label">
+        <span id="progressText" style="opacity:.8">0 de 0 completadas</span>
+        <span class="pct" id="progressPct">0%</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="filters">
+    <button class="filter-btn active" data-filter="all">Todas</button>
+    <button class="filter-btn" data-filter="pending">Pendientes</button>
+    <button class="filter-btn" data-filter="done">Completadas</button>
+    <button class="clear-btn" id="clearBtn" style="display:none">🗑 Limpiar completadas</button>
+  </div>
+  <div id="cats"></div>
+  <div id="newCatZone"></div>
+
+  <div class="backup-row">
+    <button class="backup-btn" id="exportBtn">⬇ Exportar backup</button>
+    <button class="backup-btn" id="importBtn">⬆ Importar backup</button>
+    <input type="file" id="importInput" accept="application/json,.json" style="display:none">
+  </div>
+
+  <div class="foot">Tocá el texto para editar · ⠿ arrastrá para reordenar · 📷 cámara · 📎 galería</div>
+</div>
+
+<div class="cropper" id="cropper">
+  <div class="crop-panel">
+    <div class="crop-title">Recortar imagen</div>
+    <div class="crop-stage" id="cropStage">
+      <img id="cropImg" alt="">
+      <div class="crop-box" id="cropBox">
+        <div class="crop-handle tl" data-h="tl"></div>
+        <div class="crop-handle tr" data-h="tr"></div>
+        <div class="crop-handle bl" data-h="bl"></div>
+        <div class="crop-handle br" data-h="br"></div>
+      </div>
+    </div>
+    <div class="crop-actions">
+      <button class="crop-skip" id="cropSkip">Usar completa</button>
+      <button class="crop-ok" id="cropOk">Recortar y guardar</button>
+    </div>
+    <button class="crop-cancel" id="cropCancel">Cancelar</button>
+  </div>
+</div>
+
+<div class="lb" id="lightbox">
+  <button class="lb-close" id="lbClose">×</button>
+  <button class="lb-nav lb-prev" id="lbPrev">‹</button>
+  <img class="lb-img" id="lbImg" src="" alt="">
+  <button class="lb-nav lb-next" id="lbNext">›</button>
+  <div class="lb-count" id="lbCount"></div>
+</div>
+
+<script>
+const STORAGE_KEY = "checklist_personal_html_v1";
+
+const DEFAULT_CATEGORIES = [
+  { id: "general",     icon: "📋", label: "General",     color: "#2563eb", items: [] },
+  { id: "carpinteria", icon: "🪚", label: "Carpintería", color: "#92400e", items: [] },
+  { id: "plantas",     icon: "🌿", label: "Plantas",     color: "#16a34a", items: [] },
+];
+
+let state = load() || { categories: DEFAULT_CATEGORIES, checked: {} };
+let filter = "all";
+let editingId = null;
+let editingDescId = null;
+
+// Lightbox state
+let lbImages = [], lbIndex = 0;
+let lbScale = 1, lbTx = 0, lbTy = 0;
+
+// Drag & drop state
+let dragSrc = null;
+let touchDrag = null;
+
+// Global touch handlers for mobile reordering
+document.addEventListener("touchmove", e => {
+  if (!touchDrag) return;
+  e.preventDefault();
+  const t = e.touches[0];
+  const el = document.elementFromPoint(t.clientX, t.clientY);
+  const overItem = el && el.closest(".item");
+  document.querySelectorAll(".item.drag-over").forEach(x => x.classList.remove("drag-over"));
+  if (overItem && overItem.dataset.catId === touchDrag.catId && overItem.dataset.itemId !== touchDrag.itemId) {
+    overItem.classList.add("drag-over");
+  }
+}, { passive: false });
+
+document.addEventListener("touchend", () => {
+  if (!touchDrag) return;
+  const target = document.querySelector(".item.drag-over");
+  if (target && target.dataset.catId === touchDrag.catId) {
+    reorderItem(touchDrag.catId, touchDrag.itemId, target.dataset.itemId);
+  }
+  document.querySelectorAll(".item.drag-over,.item.dragging").forEach(x => x.classList.remove("drag-over","dragging"));
+  touchDrag = null;
+});
+
+function reorderItem(catId, srcId, targetId) {
+  const cat = findContainer(catId);
+  if (!cat) return;
+  const items = cat.items;
+  const from = items.findIndex(i => i.id === srcId);
+  const to = items.findIndex(i => i.id === targetId);
+  if (from === -1 || to === -1) return;
+  const [moved] = items.splice(from, 1);
+  items.splice(to, 0, moved);
+  save(); render();
+}
+
+function load() {
+  try { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : null; }
+  catch { return null; }
+}
+function save() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    const b = document.getElementById("savedBadge");
+    b.classList.add("show");
+    clearTimeout(window._st);
+    window._st = setTimeout(() => b.classList.remove("show"), 1200);
+  } catch (e) {
+    const totalImgs = state.categories.reduce((n, c) => n + c.items.reduce((m, i) => m + (i.images ? i.images.length : 0), 0), 0);
+    alert(
+      "No se pudo guardar: el almacenamiento del navegador está lleno.\n\n" +
+      "Tenés " + totalImgs + " imágenes guardadas. El navegador permite ~5 MB en total.\n\n" +
+      "Soluciones:\n" +
+      "• Eliminá algunas fotos viejas que ya no necesites.\n" +
+      "• Borrá tareas completadas.\n\n" +
+      "Las fotos nuevas ya se comprimen automáticamente, pero el espacio total sigue siendo limitado."
+    );
+  }
+}
+
+function toggle(id) { state.checked[id] = !state.checked[id]; save(); render(); }
+
+// Find a task-container (category OR subcategory) by id
+function findContainer(id) {
+  for (const cat of state.categories) {
+    if (cat.id === id) return cat;
+    if (cat.subcats) {
+      for (const sc of cat.subcats) if (sc.id === id) return sc;
+    }
+  }
+  return null;
+}
+
+function addItem(catId, text) {
+  text = text.trim(); if (!text) return;
+  const cont = findContainer(catId);
+  if (!cont) return;
+  cont.items = cont.items || [];
+  cont.items.push({ id: catId + "_" + Date.now(), text, images: [], links: [] });
+  save(); render();
+}
+
+function removeItem(catId, itemId) {
+  const cont = findContainer(catId);
+  if (!cont) return;
+  cont.items = cont.items.filter(i => i.id !== itemId);
+  delete state.checked[itemId];
+  save(); render();
+}
+
+function editItem(catId, itemId, text) {
+  text = text.trim(); if (!text) { editingId = null; render(); return; }
+  const cont = findContainer(catId);
+  const it = cont && cont.items.find(i => i.id === itemId);
+  if (it) it.text = text;
+  editingId = null; save(); render();
+}
+
+function saveDesc(catId, itemId, desc) {
+  const cont = findContainer(catId);
+  const it = cont && cont.items.find(i => i.id === itemId);
+  if (it) it.desc = desc.trim();
+  editingDescId = null; save(); render();
+}
+
+// Compress a dataURL/canvas-source down for storage
+function compressDataURL(srcDataURL) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 1280;
+      let { width, height } = img;
+      if (width > height && width > MAX) { height = Math.round(height * MAX / width); width = MAX; }
+      else if (height > MAX) { width = Math.round(width * MAX / height); height = MAX; }
+      const canvas = document.createElement("canvas");
+      canvas.width = width; canvas.height = height;
+      canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL("image/jpeg", 0.7));
+    };
+    img.onerror = reject;
+    img.src = srcDataURL;
+  });
+}
+
+function fileToDataURL(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = e => res(e.target.result);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+// ── Crop modal state & geometry ──
+let cropResolve = null;
+let cropImgNatural = { w: 0, h: 0 };
+
+function openCropper(dataURL) {
+  return new Promise(resolve => {
+    cropResolve = resolve;
+    const modal = document.getElementById("cropper");
+    const imgEl = document.getElementById("cropImg");
+    imgEl.onload = () => {
+      cropImgNatural = { w: imgEl.naturalWidth, h: imgEl.naturalHeight };
+      modal.classList.add("open");
+      // init crop box to ~80% centered, after layout settles
+      requestAnimationFrame(() => initCropBox());
+    };
+    imgEl.src = dataURL;
+  });
+}
+
+function imgRect() {
+  const imgEl = document.getElementById("cropImg");
+  const stage = document.getElementById("cropStage");
+  const ir = imgEl.getBoundingClientRect();
+  const sr = stage.getBoundingClientRect();
+  return { left: ir.left - sr.left, top: ir.top - sr.top, width: ir.width, height: ir.height };
+}
+
+function initCropBox() {
+  const r = imgRect();
+  const box = document.getElementById("cropBox");
+  const w = r.width * 0.8, h = r.height * 0.8;
+  setBox(r.left + (r.width - w) / 2, r.top + (r.height - h) / 2, w, h);
+}
+
+function setBox(x, y, w, h) {
+  const box = document.getElementById("cropBox");
+  box.style.left = x + "px"; box.style.top = y + "px";
+  box.style.width = w + "px"; box.style.height = h + "px";
+}
+
+function getBox() {
+  const box = document.getElementById("cropBox");
+  return { x: box.offsetLeft, y: box.offsetTop, w: box.offsetWidth, h: box.offsetHeight };
+}
+
+function clampBoxToImage() {
+  const r = imgRect();
+  let { x, y, w, h } = getBox();
+  const minS = 30;
+  w = Math.max(minS, Math.min(w, r.width));
+  h = Math.max(minS, Math.min(h, r.height));
+  x = Math.max(r.left, Math.min(x, r.left + r.width - w));
+  y = Math.max(r.top, Math.min(y, r.top + r.height - h));
+  setBox(x, y, w, h);
+}
+
+// Drag move + resize
+(function setupCropInteractions() {
+  let mode = null, startX = 0, startY = 0, startBox = null, handle = null;
+
+  function pointerDown(e) {
+    const box = document.getElementById("cropBox");
+    const target = e.target;
+    if (target.classList.contains("crop-handle")) {
+      mode = "resize"; handle = target.dataset.h;
+    } else if (target === box) {
+      mode = "move";
+    } else return;
+    const p = e.touches ? e.touches[0] : e;
+    startX = p.clientX; startY = p.clientY;
+    startBox = getBox();
+    e.preventDefault();
+  }
+  function pointerMove(e) {
+    if (!mode) return;
+    const p = e.touches ? e.touches[0] : e;
+    const dx = p.clientX - startX, dy = p.clientY - startY;
+    if (mode === "move") {
+      setBox(startBox.x + dx, startBox.y + dy, startBox.w, startBox.h);
+    } else {
+      let { x, y, w, h } = startBox;
+      if (handle.includes("l")) { x = startBox.x + dx; w = startBox.w - dx; }
+      if (handle.includes("r")) { w = startBox.w + dx; }
+      if (handle.includes("t")) { y = startBox.y + dy; h = startBox.h - dy; }
+      if (handle.includes("b")) { h = startBox.h + dy; }
+      if (w > 30 && h > 30) setBox(x, y, w, h);
+    }
+    clampBoxToImage();
+    e.preventDefault();
+  }
+  function pointerUp() { mode = null; handle = null; }
+
+  const stage = () => document.getElementById("cropStage");
+  document.addEventListener("mousedown", e => { if (e.target.closest("#cropStage")) pointerDown(e); });
+  document.addEventListener("mousemove", pointerMove);
+  document.addEventListener("mouseup", pointerUp);
+  document.addEventListener("touchstart", e => { if (e.target.closest("#cropStage")) pointerDown(e); }, { passive: false });
+  document.addEventListener("touchmove", e => { if (mode) pointerMove(e); }, { passive: false });
+  document.addEventListener("touchend", pointerUp);
+})();
+
+function finishCrop(doCrop) {
+  const imgEl = document.getElementById("cropImg");
+  const modal = document.getElementById("cropper");
+  let resultDataURL;
+
+  if (doCrop) {
+    const r = imgRect();
+    const b = getBox();
+    const scaleX = cropImgNatural.w / r.width;
+    const scaleY = cropImgNatural.h / r.height;
+    const sx = (b.x - r.left) * scaleX;
+    const sy = (b.y - r.top) * scaleY;
+    const sw = b.w * scaleX;
+    const sh = b.h * scaleY;
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(sw); canvas.height = Math.round(sh);
+    canvas.getContext("2d").drawImage(imgEl, sx, sy, sw, sh, 0, 0, sw, sh);
+    resultDataURL = canvas.toDataURL("image/jpeg", 0.92);
+  } else {
+    resultDataURL = imgEl.src;
+  }
+
+  modal.classList.remove("open");
+  const r = cropResolve; cropResolve = null;
+  if (r) r(resultDataURL);
+}
+
+document.getElementById("cropOk").onclick = () => finishCrop(true);
+document.getElementById("cropSkip").onclick = () => finishCrop(false);
+document.getElementById("cropCancel").onclick = () => {
+  document.getElementById("cropper").classList.remove("open");
+  const r = cropResolve; cropResolve = null;
+  if (r) r(null); // null = cancelled
+};
+
+async function addImages(catId, itemId, fileList) {
+  if (!fileList || !fileList.length) return;
+  const cat = findContainer(catId);
+  const it = cat.items.find(i => i.id === itemId);
+  if (!it) return;
+  it.images = it.images || [];
+
+  for (const file of Array.from(fileList)) {
+    const original = await fileToDataURL(file);
+    const cropped = await openCropper(original); // waits for user
+    if (cropped === null) continue; // cancelled this image
+    const finalData = await compressDataURL(cropped);
+    it.images.push({ name: file.name, data: finalData });
+    save(); render();
+  }
+}
+
+function removeImage(catId, itemId, idx) {
+  const cat = findContainer(catId);
+  const it = cat.items.find(i => i.id === itemId);
+  it.images.splice(idx, 1);
+  save(); render();
+}
+
+// ── Video links ──
+function youtubeId(url) {
+  if (!url) return null;
+  const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+function hostname(url) {
+  try { return new URL(url).hostname.replace(/^www\./, ""); }
+  catch { return "enlace"; }
+}
+function normalizeUrl(url) {
+  url = url.trim();
+  if (!url) return "";
+  if (!/^https?:\/\//i.test(url)) url = "https://" + url;
+  return url;
+}
+
+async function promptAddLink(catId, itemId) {
+  let url = prompt("Pegá el link del video (YouTube u otro):");
+  if (url === null) return;
+  url = normalizeUrl(url);
+  if (!url) return;
+  // Try to fetch a title via YouTube oEmbed; fall back gracefully
+  let title = "";
+  const vid = youtubeId(url);
+  if (vid) {
+    try {
+      const r = await fetch("https://www.youtube.com/oembed?format=json&url=" + encodeURIComponent(url));
+      if (r.ok) { const d = await r.json(); title = d.title || ""; }
+    } catch (e) { /* offline or blocked — leave title empty */ }
+  }
+  if (!title) {
+    const custom = prompt("Título para el link (opcional):", vid ? "" : url);
+    if (custom !== null && custom.trim()) title = custom.trim();
+  }
+  const cat = findContainer(catId);
+  const it = cat.items.find(i => i.id === itemId);
+  it.links = it.links || [];
+  it.links.push({ url, title });
+  save(); render();
+}
+
+function removeLink(catId, itemId, idx) {
+  const cat = findContainer(catId);
+  const it = cat.items.find(i => i.id === itemId);
+  if (it && it.links) { it.links.splice(idx, 1); save(); render(); }
+}
+
+// All task-containers (categories + their subcategories)
+function allContainers() {
+  const out = [];
+  state.categories.forEach(c => {
+    out.push(c);
+    (c.subcats || []).forEach(sc => out.push(sc));
+  });
+  return out;
+}
+function allTasks() {
+  return allContainers().flatMap(c => c.items || []);
+}
+
+// Does a task have any attachment (image or link)?
+function taskHasAttach(it) {
+  return (it.images && it.images.length) || (it.links && it.links.length);
+}
+// Container flag: any of its own tasks (and, for a category, its subcats' tasks) have attachments
+function containerHasAttach(cont, includeSubs) {
+  if ((cont.items || []).some(taskHasAttach)) return true;
+  if (includeSubs && cont.subcats) {
+    return cont.subcats.some(sc => (sc.items || []).some(taskHasAttach));
+  }
+  return false;
+}
+
+function clearCompleted() {
+  const done = Object.keys(state.checked).filter(k => state.checked[k]);
+  allContainers().forEach(c => { c.items = (c.items || []).filter(i => !done.includes(i.id)); });
+  done.forEach(id => delete state.checked[id]);
+  save(); render();
+}
+
+function removeCategory(catId) {
+  const cat = findContainer(catId);
+  if (cat) cat.items.forEach(i => delete state.checked[i.id]);
+  state.categories = state.categories.filter(c => c.id !== catId);
+  save(); render();
+}
+
+function addCategory(icon, label, color) {
+  label = (label || "").trim();
+  if (!label) return;
+  state.categories.push({
+    id: "cat_" + Date.now(),
+    icon: (icon || "📁").trim() || "📁",
+    label,
+    color: color || "#64748b",
+    items: [],
+  });
+  save(); render();
+}
+
+function toggleCollapse(catId) {
+  state.collapsed = state.collapsed || {};
+  state.collapsed[catId] = !state.collapsed[catId];
+  save(); render();
+}
+
+function toggleAllowAttach(catId) {
+  const cont = findContainer(catId);
+  if (!cont) return;
+  // default is true, so first toggle turns it off
+  cont.allowAttach = (cont.allowAttach === false) ? true : false;
+  save(); render();
+}
+
+// Effective attachment permission: a subcategory is disabled if its parent category is disabled
+function attachEffective(contId) {
+  for (const cat of state.categories) {
+    if (cat.id === contId) return cat.allowAttach !== false;
+    if (cat.subcats) {
+      for (const sc of cat.subcats) {
+        if (sc.id === contId) {
+          // parent off => child off; otherwise child's own flag
+          if (cat.allowAttach === false) return false;
+          return sc.allowAttach !== false;
+        }
+      }
+    }
+  }
+  return true;
+}
+
+function editCategory(catId) {
+  editingCatId = catId;
+  render();
+}
+
+let editingCatId = null;
+
+function saveCategoryEdit(catId, icon, label) {
+  const cat = findContainer(catId);
+  if (cat) {
+    if (icon.trim()) cat.icon = icon.trim();
+    if (label.trim()) cat.label = label.trim();
+  }
+  editingCatId = null;
+  save(); render();
+}
+
+function promptAddSubcat(catId) {
+  const cat = state.categories.find(c => c.id === catId);
+  if (!cat) return;
+  cat.subcats = cat.subcats || [];
+  const sc = {
+    id: "sub_" + Date.now(),
+    icon: "📂",
+    label: "Nueva subcategoría",
+    color: cat.color,
+    items: [],
+  };
+  cat.subcats.push(sc);
+  editingCatId = sc.id; // open inline edit immediately
+  save(); render();
+}
+
+function removeSubcat(catId, subId) {
+  const cat = state.categories.find(c => c.id === catId);
+  if (!cat || !cat.subcats) return;
+  const sc = cat.subcats.find(s => s.id === subId);
+  if (sc) (sc.items || []).forEach(i => delete state.checked[i.id]);
+  cat.subcats = cat.subcats.filter(s => s.id !== subId);
+  save(); render();
+}
+
+// Category reorder
+let catDragSrc = null;
+let catTouchDrag = null;
+
+function reorderCategory(srcId, targetId) {
+  const from = state.categories.findIndex(c => c.id === srcId);
+  const to = state.categories.findIndex(c => c.id === targetId);
+  if (from === -1 || to === -1) return;
+  const [moved] = state.categories.splice(from, 1);
+  state.categories.splice(to, 0, moved);
+  save(); render();
+}
+
+// Touch reordering for categories
+document.addEventListener("touchmove", e => {
+  if (!catTouchDrag) return;
+  e.preventDefault();
+  const t = e.touches[0];
+  const el = document.elementFromPoint(t.clientX, t.clientY);
+  const overCat = el && el.closest(".cat");
+  document.querySelectorAll(".cat-drag-over").forEach(x => x.classList.remove("cat-drag-over"));
+  if (overCat && overCat.dataset.catId && overCat.dataset.catId !== catTouchDrag.catId) {
+    overCat.classList.add("cat-drag-over");
+  }
+}, { passive: false });
+
+document.addEventListener("touchend", () => {
+  if (!catTouchDrag) return;
+  const target = document.querySelector(".cat-drag-over");
+  if (target && target.dataset.catId) {
+    reorderCategory(catTouchDrag.catId, target.dataset.catId);
+  }
+  document.querySelectorAll(".cat-drag-over,.cat-dragging").forEach(x => x.classList.remove("cat-drag-over","cat-dragging"));
+  catTouchDrag = null;
+});
+
+function openLightbox(images, idx) {
+  lbImages = images; lbIndex = idx;
+  updateLightbox();
+  document.getElementById("lightbox").classList.add("open");
+}
+function updateLightbox() {
+  const im = document.getElementById("lbImg");
+  lbScale = 1; lbTx = 0; lbTy = 0;
+  im.classList.remove("zoomed");
+  im.style.transform = "";
+  im.src = lbImages[lbIndex].data;
+  const multi = lbImages.length > 1;
+  document.getElementById("lbPrev").style.display = multi ? "flex" : "none";
+  document.getElementById("lbNext").style.display = multi ? "flex" : "none";
+  document.getElementById("lbCount").textContent = multi ? (lbIndex+1)+" / "+lbImages.length : "";
+}
+function closeLightbox() {
+  const im = document.getElementById("lbImg");
+  lbScale = 1; lbTx = 0; lbTy = 0;
+  im.classList.remove("zoomed");
+  im.style.transform = "";
+  document.getElementById("lightbox").classList.remove("open");
+}
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
+}
+
+function render() {
+  // progress
+  const allItems = allTasks();
+  const total = allItems.length;
+  const doneCount = allItems.filter(i => state.checked[i.id]).length;
+  const pct = total ? Math.round(doneCount/total*100) : 0;
+  document.getElementById("progressText").textContent = doneCount + " de " + total + " completadas";
+  document.getElementById("progressPct").textContent = pct + "%";
+  const fill = document.getElementById("progressFill");
+  fill.style.width = pct + "%";
+  fill.style.background = pct === 100 ? "#4ade80" : "#f59e0b";
+  document.getElementById("clearBtn").style.display = doneCount > 0 ? "block" : "none";
+
+  const catsEl = document.getElementById("cats");
+  catsEl.innerHTML = "";
+
+  state.categories.forEach(cat => {
+    let items = cat.items;
+    if (filter === "pending") items = items.filter(i => !state.checked[i.id]);
+    if (filter === "done")    items = items.filter(i =>  state.checked[i.id]);
+    if (filter !== "all" && items.length === 0) return;
+
+    const catDone = cat.items.filter(i => state.checked[i.id]).length;
+    const allDone = cat.items.length > 0 && catDone === cat.items.length;
+
+    const catDiv = document.createElement("div");
+    catDiv.className = "cat";
+    catDiv.dataset.catId = cat.id;
+
+    const collapsed = !!(state.collapsed && state.collapsed[cat.id]);
+
+    // ── header ──
+    const head = document.createElement("div");
+    head.className = "cat-head";
+    head.style.background = cat.color + "09";
+
+    // category drag handle (reorder categories) — only on full view
+    const canReorderCats = (filter === "all");
+    if (canReorderCats) {
+      const cHandle = document.createElement("div");
+      cHandle.className = "cat-drag";
+      cHandle.textContent = "⠿";
+      cHandle.title = "Arrastrar para reordenar categoría";
+      cHandle.addEventListener("touchstart", e => {
+        e.preventDefault();
+        catTouchDrag = { catId: cat.id, el: catDiv };
+        catDiv.classList.add("cat-dragging");
+      }, { passive: false });
+      head.appendChild(cHandle);
+    }
+
+    // chevron (collapse toggle)
+    const chevron = document.createElement("button");
+    chevron.className = "cat-chevron" + (collapsed ? " collapsed" : "");
+    chevron.innerHTML = "▾";
+    chevron.title = collapsed ? "Expandir" : "Colapsar";
+    chevron.onclick = () => toggleCollapse(cat.id);
+    head.appendChild(chevron);
+
+    if (editingCatId === cat.id) {
+      // Inline edit mode — replace icon + label with inputs
+      const iconInp = document.createElement("input");
+      iconInp.className = "cat-edit-icon";
+      iconInp.value = cat.icon; iconInp.maxLength = 2;
+      const nameInp = document.createElement("input");
+      nameInp.className = "cat-edit-name";
+      nameInp.value = cat.label;
+      nameInp.style.border = "1.5px solid " + cat.color;
+      const doSave = () => saveCategoryEdit(cat.id, iconInp.value, nameInp.value);
+      nameInp.onkeydown = e => { if (e.key === "Enter") doSave(); if (e.key === "Escape") { editingCatId = null; render(); } };
+      const attachToggle = document.createElement("button");
+      attachToggle.type = "button";
+      const aOn = (cat.allowAttach !== false);
+      attachToggle.className = "attach-toggle" + (aOn ? " on" : "");
+      attachToggle.innerHTML = aOn ? "📎" : "🚫";
+      attachToggle.title = aOn ? "Adjuntos: permitidos (tocá para desactivar)" : "Adjuntos: desactivados (tocá para permitir)";
+      attachToggle.onmousedown = e => e.preventDefault();
+      attachToggle.onclick = e => { e.preventDefault(); e.stopPropagation(); toggleAllowAttach(cat.id); };
+      const okBtn = document.createElement("button");
+      okBtn.className = "cat-edit-ok"; okBtn.textContent = "✓";
+      okBtn.style.background = cat.color;
+      okBtn.onclick = doSave;
+      head.appendChild(iconInp);
+      head.appendChild(nameInp);
+      head.appendChild(attachToggle);
+      head.appendChild(okBtn);
+      setTimeout(() => nameInp.focus(), 0);
+    } else {
+      const icon = document.createElement("span");
+      icon.className = "icon"; icon.textContent = cat.icon;
+      head.appendChild(icon);
+
+      const label = document.createElement("span");
+      label.className = "label"; label.textContent = cat.label;
+      label.title = "Tocá para colapsar";
+      label.onclick = () => toggleCollapse(cat.id);
+      head.appendChild(label);
+    }
+
+    if (editingCatId !== cat.id) {
+      const flag = document.createElement("button");
+      flag.type = "button";
+      const on = (cat.allowAttach !== false);
+      flag.className = "attach-flag-btn" + (on ? " on" : " off");
+      flag.textContent = on ? "📎" : "🚫";
+      flag.title = on ? "Adjuntos permitidos (tocá para desactivar)" : "Adjuntos desactivados (tocá para permitir)";
+      flag.onclick = e => { e.stopPropagation(); toggleAllowAttach(cat.id); };
+      head.appendChild(flag);
+    }
+
+    if (cat.items.length && editingCatId !== cat.id) {
+      const count = document.createElement("span");
+      count.className = "cat-count";
+      count.style.color = allDone ? "#16a34a" : cat.color;
+      count.style.background = allDone ? "#dcfce7" : cat.color + "18";
+      count.textContent = catDone + "/" + cat.items.length;
+      head.appendChild(count);
+    }
+
+    if (editingCatId !== cat.id) {
+      // edit button
+      const catEdit = document.createElement("button");
+      catEdit.className = "cat-edit"; catEdit.textContent = "✎"; catEdit.title = "Editar categoría";
+      catEdit.onclick = () => editCategory(cat.id);
+      head.appendChild(catEdit);
+
+      // delete button
+      const catDel = document.createElement("button");
+      catDel.className = "cat-del"; catDel.textContent = "🗑"; catDel.title = "Eliminar categoría";
+      catDel.onclick = () => {
+        const n = cat.items.length;
+        const msg = n > 0
+          ? '¿Eliminar la categoría "' + cat.label + '" con sus ' + n + ' tarea' + (n > 1 ? 's' : '') + ' (e imágenes)?'
+          : '¿Eliminar la categoría "' + cat.label + '"?';
+        if (confirm(msg)) removeCategory(cat.id);
+      };
+      head.appendChild(catDel);
+    }
+
+    // category reorder via HTML5 DnD (desktop)
+    if (canReorderCats) {
+      catDiv.addEventListener("dragover", e => {
+        if (!catDragSrc || catDragSrc === cat.id) return;
+        e.preventDefault();
+        catDiv.classList.add("cat-drag-over");
+      });
+      catDiv.addEventListener("dragleave", () => catDiv.classList.remove("cat-drag-over"));
+      catDiv.addEventListener("drop", e => {
+        e.preventDefault();
+        catDiv.classList.remove("cat-drag-over");
+        if (catDragSrc && catDragSrc !== cat.id) reorderCategory(catDragSrc, cat.id);
+        catDragSrc = null;
+      });
+    }
+
+    catDiv.appendChild(head);
+
+    // ── body (collapsible) ──
+    const body = document.createElement("div");
+    body.className = "cat-body";
+    if (collapsed) body.style.display = "none";
+
+    appendTasks(cat, body, { skipAddBtn: true });
+
+    // ── subcategories ──
+    (cat.subcats || []).forEach(sc => {
+      const scCollapsed = !!(state.collapsed && state.collapsed[sc.id]);
+      const scDiv = document.createElement("div");
+      scDiv.className = "subcat";
+      scDiv.dataset.subId = sc.id;
+
+      const scHead = document.createElement("div");
+      scHead.className = "subcat-head";
+      scHead.style.background = sc.color + "0d";
+
+      const scChevron = document.createElement("button");
+      scChevron.className = "cat-chevron" + (scCollapsed ? " collapsed" : "");
+      scChevron.innerHTML = "▾";
+      scChevron.onclick = () => toggleCollapse(sc.id);
+      scHead.appendChild(scChevron);
+
+      if (editingCatId === sc.id) {
+        const iconInp = document.createElement("input");
+        iconInp.className = "cat-edit-icon"; iconInp.value = sc.icon; iconInp.maxLength = 2;
+        const nameInp = document.createElement("input");
+        nameInp.className = "cat-edit-name"; nameInp.value = sc.label;
+        nameInp.style.border = "1.5px solid " + sc.color;
+        const doSave = () => saveCategoryEdit(sc.id, iconInp.value, nameInp.value);
+        nameInp.onkeydown = e => { if (e.key === "Enter") doSave(); if (e.key === "Escape") { editingCatId = null; render(); } };
+        const scAttach = document.createElement("button");
+        scAttach.type = "button";
+        const parentOff = (cat.allowAttach === false);
+        const scAOn = !parentOff && (sc.allowAttach !== false);
+        scAttach.className = "attach-toggle" + (scAOn ? " on" : "");
+        scAttach.innerHTML = scAOn ? "📎" : "🚫";
+        if (parentOff) {
+          scAttach.disabled = true;
+          scAttach.style.opacity = "0.3";
+          scAttach.title = "La categoría madre tiene los adjuntos desactivados";
+        } else {
+          scAttach.title = scAOn ? "Adjuntos: permitidos (tocá para desactivar)" : "Adjuntos: desactivados (tocá para permitir)";
+          scAttach.onmousedown = e => e.preventDefault();
+          scAttach.onclick = e => { e.preventDefault(); e.stopPropagation(); toggleAllowAttach(sc.id); };
+        }
+        const okBtn = document.createElement("button");
+        okBtn.className = "cat-edit-ok"; okBtn.textContent = "✓"; okBtn.style.background = sc.color;
+        okBtn.onclick = doSave;
+        scHead.appendChild(iconInp); scHead.appendChild(nameInp); scHead.appendChild(scAttach); scHead.appendChild(okBtn);
+        setTimeout(() => nameInp.focus(), 0);
+      } else {
+        const scIcon = document.createElement("span");
+        scIcon.className = "icon"; scIcon.textContent = sc.icon; scIcon.style.fontSize = "17px";
+        scHead.appendChild(scIcon);
+        const scLabel = document.createElement("span");
+        scLabel.className = "label"; scLabel.textContent = sc.label; scLabel.style.fontSize = "14px";
+        scLabel.onclick = () => toggleCollapse(sc.id);
+        scHead.appendChild(scLabel);
+
+        const scDone = (sc.items || []).filter(i => state.checked[i.id]).length;
+        {
+          const parentOff = (cat.allowAttach === false);
+          const on = attachEffective(sc.id);
+          const scFlag = document.createElement("button");
+          scFlag.type = "button";
+          scFlag.className = "attach-flag-btn" + (on ? " on" : " off");
+          scFlag.textContent = on ? "📎" : "🚫";
+          if (parentOff) {
+            scFlag.disabled = true;
+            scFlag.style.opacity = "0.3";
+            scFlag.title = "La categoría madre tiene los adjuntos desactivados";
+          } else {
+            scFlag.title = on ? "Adjuntos permitidos (tocá para desactivar)" : "Adjuntos desactivados (tocá para permitir)";
+            scFlag.onclick = e => { e.stopPropagation(); toggleAllowAttach(sc.id); };
+          }
+          scHead.appendChild(scFlag);
+        }
+        if ((sc.items || []).length) {
+          const scCount = document.createElement("span");
+          scCount.className = "cat-count";
+          const scAllDone = scDone === sc.items.length;
+          scCount.style.color = scAllDone ? "#16a34a" : sc.color;
+          scCount.style.background = scAllDone ? "#dcfce7" : sc.color + "18";
+          scCount.textContent = scDone + "/" + sc.items.length;
+          scHead.appendChild(scCount);
+        }
+        const scEdit = document.createElement("button");
+        scEdit.className = "cat-edit"; scEdit.textContent = "✎"; scEdit.title = "Editar subcategoría";
+        scEdit.onclick = () => editCategory(sc.id);
+        scHead.appendChild(scEdit);
+        const scDel = document.createElement("button");
+        scDel.className = "cat-del"; scDel.textContent = "🗑"; scDel.title = "Eliminar subcategoría";
+        scDel.onclick = () => {
+          const n = (sc.items || []).length;
+          const msg = n > 0
+            ? '¿Eliminar la subcategoría "' + sc.label + '" con sus ' + n + ' tarea(s)?'
+            : '¿Eliminar la subcategoría "' + sc.label + '"?';
+          if (confirm(msg)) removeSubcat(cat.id, sc.id);
+        };
+        scHead.appendChild(scDel);
+      }
+
+      scDiv.appendChild(scHead);
+
+      const scBody = document.createElement("div");
+      scBody.className = "cat-body";
+      if (scCollapsed) scBody.style.display = "none";
+      appendTasks(sc, scBody, { addLabel: "Agregar tarea a " + sc.label });
+      scDiv.appendChild(scBody);
+
+      body.appendChild(scDiv);
+    });
+
+    // add task to the CATEGORY itself (placed below subcategories)
+    appendAddButton(cat, body, "Agregar tarea a " + cat.label);
+
+    // add subcategory
+    const addSub = document.createElement("button");
+    addSub.className = "add-sub-btn";
+    addSub.style.color = cat.color;
+    addSub.innerHTML = "▸ Agregar subcategoría";
+    addSub.onclick = () => promptAddSubcat(cat.id);
+    body.appendChild(addSub);
+
+    catDiv.appendChild(body);
+
+    // enable category-level dragging (desktop) — header is the drag source
+    if (canReorderCats) {
+      catDiv.draggable = true;
+      catDiv.addEventListener("dragstart", e => {
+        // only start if not dragging an item
+        if (dragSrc) return;
+        catDragSrc = cat.id;
+        catDiv.classList.add("cat-dragging");
+        e.dataTransfer.effectAllowed = "move";
+      });
+      catDiv.addEventListener("dragend", () => {
+        catDiv.classList.remove("cat-dragging");
+        document.querySelectorAll(".cat-drag-over").forEach(el => el.classList.remove("cat-drag-over"));
+        catDragSrc = null;
+      });
+    }
+
+    catsEl.appendChild(catDiv);
+  });
+
+  renderNewCatZone();
+}
+
+const CAT_COLORS = ["#2563eb","#16a34a","#92400e","#dc2626","#7c3aed","#0891b2","#d97706","#db2777","#475569"];
+
+function appendTasks(cont, body, opts) {
+    opts = opts || {};
+    const addLabel = opts.addLabel || "Agregar tarea";
+    const skipAddBtn = !!opts.skipAddBtn;
+    let items = cont.items || [];
+    if (filter === 'pending') items = items.filter(i => !state.checked[i.id]);
+    if (filter === 'done')    items = items.filter(i =>  state.checked[i.id]);
+    const attachAllowed = attachEffective(cont.id); // considers parent category
+    // items
+    if (cont.items.length === 0 && filter === "all") {
+      const e = document.createElement("div");
+      e.className = "empty"; e.textContent = "Sin tareas aún — agregá la primera abajo";
+      body.appendChild(e);
+    }
+
+    items.forEach(item => {
+      const isDone = !!state.checked[item.id];
+      const itemDiv = document.createElement("div");
+      itemDiv.className = "item" + (isDone ? " done" : "");
+      itemDiv.dataset.itemId = item.id;
+      itemDiv.dataset.catId = cont.id;
+
+      // Drag & drop (disabled while filtering, since order only makes sense on full list)
+      const canReorder = (filter === "all");
+      if (canReorder) {
+        itemDiv.draggable = true;
+        itemDiv.addEventListener("dragstart", e => {
+          dragSrc = { catId: cont.id, itemId: item.id };
+          itemDiv.classList.add("dragging");
+          e.dataTransfer.effectAllowed = "move";
+        });
+        itemDiv.addEventListener("dragend", () => {
+          itemDiv.classList.remove("dragging");
+          document.querySelectorAll(".item.drag-over").forEach(el => el.classList.remove("drag-over"));
+        });
+        itemDiv.addEventListener("dragover", e => {
+          if (!dragSrc || dragSrc.catId !== cont.id) return; // only within same category
+          e.preventDefault();
+          itemDiv.classList.add("drag-over");
+        });
+        itemDiv.addEventListener("dragleave", () => itemDiv.classList.remove("drag-over"));
+        itemDiv.addEventListener("drop", e => {
+          e.preventDefault();
+          itemDiv.classList.remove("drag-over");
+          if (dragSrc && dragSrc.catId === cont.id && dragSrc.itemId !== item.id) {
+            reorderItem(cont.id, dragSrc.itemId, item.id);
+          }
+          dragSrc = null;
+        });
+      }
+
+      // row
+      const row = document.createElement("div");
+      row.className = "item-row";
+
+      // drag handle
+      if (canReorder) {
+        const handle = document.createElement("div");
+        handle.className = "drag-handle";
+        handle.textContent = "⠿";
+        handle.title = "Arrastrar para reordenar";
+        // Touch support (mobile): HTML5 DnD doesn't fire on touch
+        handle.addEventListener("touchstart", e => {
+          e.preventDefault();
+          touchDrag = { catId: cont.id, itemId: item.id, el: itemDiv };
+          itemDiv.classList.add("dragging");
+        }, { passive: false });
+        row.appendChild(handle);
+      }
+
+      const chk = document.createElement("div");
+      chk.className = "check";
+      chk.style.borderColor = isDone ? cont.color : "#cbd5e1";
+      chk.style.background = isDone ? cont.color : "transparent";
+      chk.innerHTML = '<svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      chk.onclick = () => toggle(item.id);
+      row.appendChild(chk);
+
+      if (editingId === item.id) {
+        const inp = document.createElement("input");
+        inp.className = "item-text-input";
+        inp.style.border = "1.5px solid " + cont.color;
+        inp.value = item.text;
+        inp.onkeydown = e => { if (e.key === "Enter") editItem(cont.id, item.id, inp.value); if (e.key === "Escape") { editingId = null; render(); } };
+        inp.onblur = () => editItem(cont.id, item.id, inp.value);
+        row.appendChild(inp);
+        setTimeout(() => inp.focus(), 0);
+      } else {
+        const txt = document.createElement("span");
+        txt.className = "item-text";
+        txt.textContent = item.text;
+        txt.title = "Tocá para editar";
+        txt.onclick = () => { editingId = item.id; render(); };
+        row.appendChild(txt);
+      }
+
+      const del = document.createElement("button");
+      del.className = "del-btn"; del.textContent = "×"; del.title = "Eliminar tarea";
+      del.onclick = () => {
+        const n = (item.images || []).length;
+        const msg = n > 0
+          ? '¿Eliminar esta tarea y sus ' + n + ' imagen' + (n > 1 ? 'es' : '') + '?'
+          : '¿Eliminar esta tarea?';
+        if (confirm(msg)) removeItem(cont.id, item.id);
+      };
+      row.appendChild(del);
+
+      itemDiv.appendChild(row);
+
+      // description (optional, editable)
+      const descWrap = document.createElement("div");
+      descWrap.className = "desc-wrap";
+      if (editingDescId === item.id) {
+        const ta = document.createElement("textarea");
+        ta.className = "desc-input";
+        ta.style.border = "1.5px solid " + cont.color;
+        ta.value = item.desc || "";
+        ta.placeholder = "Descripción / notas...";
+        ta.rows = 2;
+        ta.onblur = () => saveDesc(cont.id, item.id, ta.value);
+        ta.onkeydown = e => {
+          if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { saveDesc(cont.id, item.id, ta.value); }
+          if (e.key === "Escape") { editingDescId = null; render(); }
+        };
+        descWrap.appendChild(ta);
+        setTimeout(() => ta.focus(), 0);
+      } else if (item.desc && item.desc.trim()) {
+        const d = document.createElement("div");
+        d.className = "desc-text";
+        d.textContent = item.desc;
+        d.title = "Tocá para editar la descripción";
+        d.onclick = () => { editingDescId = item.id; render(); };
+        descWrap.appendChild(d);
+      } else {
+        const addD = document.createElement("button");
+        addD.className = "add-desc-btn";
+        addD.style.color = cont.color;
+        addD.textContent = "✎ Agregar descripción";
+        addD.onclick = () => { editingDescId = item.id; render(); };
+        descWrap.appendChild(addD);
+      }
+      itemDiv.appendChild(descWrap);
+
+      // image strip
+      const strip = document.createElement("div");
+      strip.className = "strip";
+
+      (item.images || []).forEach((img, idx) => {
+        const wrap = document.createElement("div");
+        wrap.className = "thumb-wrap";
+        const im = document.createElement("img");
+        im.className = "thumb"; im.src = img.data;
+        im.style.border = "2px solid " + cont.color + "44";
+        im.onclick = () => openLightbox(item.images, idx);
+        const x = document.createElement("button");
+        x.className = "thumb-del"; x.textContent = "×";
+        x.onclick = e => { e.stopPropagation(); removeImage(cont.id, item.id, idx); };
+        wrap.appendChild(im); wrap.appendChild(x);
+        strip.appendChild(wrap);
+      });
+
+      // camera + gallery (only if category allows attachments)
+      if (attachAllowed) {
+        strip.appendChild(makeUpload("📷", cont.color, cont.id, item.id, true));
+        strip.appendChild(makeUpload("📎", cont.color, cont.id, item.id, false));
+      }
+
+      // only render the strip if it has thumbnails or upload buttons
+      if (strip.children.length) itemDiv.appendChild(strip);
+
+      // YouTube / video links
+      const linksWrap = document.createElement("div");
+      linksWrap.className = "links";
+      (item.links || []).forEach((link, idx) => {
+        const a = document.createElement("a");
+        a.className = "yt-link";
+        a.href = link.url; a.target = "_blank"; a.rel = "noopener noreferrer";
+
+        const vid = youtubeId(link.url);
+        if (vid) {
+          const t = document.createElement("img");
+          t.className = "yt-thumb";
+          t.src = "https://img.youtube.com/vi/" + vid + "/mqdefault.jpg";
+          t.alt = "";
+          a.appendChild(t);
+        } else {
+          const ic = document.createElement("div");
+          ic.className = "yt-thumb";
+          ic.style.display = "flex"; ic.style.alignItems = "center"; ic.style.justifyContent = "center";
+          ic.style.fontSize = "18px"; ic.textContent = "🔗";
+          a.appendChild(ic);
+        }
+
+        const meta = document.createElement("div");
+        meta.className = "yt-meta";
+        const tt = document.createElement("div");
+        tt.className = "yt-title";
+        tt.textContent = link.title || link.url;
+        const host = document.createElement("div");
+        host.className = "yt-host";
+        host.textContent = (vid ? "▶ YouTube" : hostname(link.url));
+        meta.appendChild(tt); meta.appendChild(host);
+        a.appendChild(meta);
+
+        const del = document.createElement("button");
+        del.className = "yt-del"; del.textContent = "×"; del.title = "Quitar link";
+        del.onclick = e => { e.preventDefault(); e.stopPropagation(); removeLink(cont.id, item.id, idx); };
+        a.appendChild(del);
+
+        linksWrap.appendChild(a);
+      });
+
+      if (attachAllowed) {
+        const addLink = document.createElement("button");
+        addLink.className = "add-link-btn";
+        addLink.style.color = cont.color;
+        addLink.innerHTML = "▶ Agregar link de video";
+        addLink.onclick = () => promptAddLink(cont.id, item.id);
+        linksWrap.appendChild(addLink);
+      }
+
+      if (linksWrap.children.length) itemDiv.appendChild(linksWrap);
+      body.appendChild(itemDiv);
+    });
+
+    // add item
+    if (!skipAddBtn) {
+      const addBtn = document.createElement("button");
+      addBtn.className = "add-btn";
+      addBtn.style.color = cont.color;
+      addBtn.innerHTML = '<span class="plus">＋</span> ' + addLabel;
+      addBtn.onclick = () => showAddRow(body, cont, addBtn);
+      body.appendChild(addBtn);
+    }
+}
+
+// Standalone helper to append just the "add task" button for a container
+function appendAddButton(cont, body, label) {
+  const addBtn = document.createElement("button");
+  addBtn.className = "add-btn";
+  addBtn.style.color = cont.color;
+  addBtn.innerHTML = '<span class="plus">＋</span> ' + label;
+  addBtn.onclick = () => showAddRow(body, cont, addBtn);
+  body.appendChild(addBtn);
+}
+
+function renderNewCatZone() {
+  const zone = document.getElementById("newCatZone");
+  zone.innerHTML = "";
+  const btn = document.createElement("button");
+  btn.className = "new-cat-btn";
+  btn.textContent = "＋ Agregar categoría";
+  btn.onclick = () => showNewCatForm();
+  zone.appendChild(btn);
+}
+
+function showNewCatForm() {
+  const zone = document.getElementById("newCatZone");
+  zone.innerHTML = "";
+  let selColor = CAT_COLORS[0];
+
+  const box = document.createElement("div");
+  box.className = "new-cat-row";
+
+  const line = document.createElement("div");
+  line.className = "nc-line";
+  const iconInp = document.createElement("input");
+  iconInp.className = "nc-icon"; iconInp.value = "📁"; iconInp.maxLength = 2;
+  const nameInp = document.createElement("input");
+  nameInp.className = "nc-name"; nameInp.placeholder = "Nombre de la categoría...";
+  line.appendChild(iconInp); line.appendChild(nameInp);
+  box.appendChild(line);
+
+  const colors = document.createElement("div");
+  colors.className = "nc-colors";
+  CAT_COLORS.forEach((c, i) => {
+    const dot = document.createElement("div");
+    dot.className = "nc-color" + (i === 0 ? " sel" : "");
+    dot.style.background = c;
+    dot.onclick = () => {
+      selColor = c;
+      colors.querySelectorAll(".nc-color").forEach(d => d.classList.remove("sel"));
+      dot.classList.add("sel");
+    };
+    colors.appendChild(dot);
+  });
+  box.appendChild(colors);
+
+  const actions = document.createElement("div");
+  actions.className = "nc-actions";
+  const ok = document.createElement("button");
+  ok.className = "nc-ok"; ok.textContent = "Crear categoría";
+  ok.onclick = () => addCategory(iconInp.value, nameInp.value, selColor);
+  const cancel = document.createElement("button");
+  cancel.className = "nc-cancel"; cancel.textContent = "Cancelar";
+  cancel.onclick = () => renderNewCatZone();
+  nameInp.onkeydown = e => { if (e.key === "Enter") addCategory(iconInp.value, nameInp.value, selColor); if (e.key === "Escape") renderNewCatZone(); };
+  actions.appendChild(ok); actions.appendChild(cancel);
+  box.appendChild(actions);
+
+  zone.appendChild(box);
+  nameInp.focus();
+}
+
+function makeUpload(icon, color, catId, itemId, isCamera) {
+  const wrap = document.createElement("div");
+  wrap.className = "upload-wrap";
+  const face = document.createElement("div");
+  face.className = "upload-face";
+  face.style.border = "2px dashed " + color + "66";
+  face.style.background = color + "0d";
+  face.textContent = icon;
+  const inp = document.createElement("input");
+  inp.className = "upload-input";
+  inp.type = "file";
+  inp.accept = "image/*";
+  if (isCamera) inp.setAttribute("capture", "environment");
+  else inp.multiple = true;
+  inp.onchange = e => { addImages(catId, itemId, e.target.files); e.target.value = ""; };
+  wrap.appendChild(face); wrap.appendChild(inp);
+  return wrap;
+}
+
+function showAddRow(catDiv, cat, addBtn) {
+  const row = document.createElement("div");
+  row.className = "add-row";
+  const inp = document.createElement("input");
+  inp.className = "add-input";
+  inp.style.border = "1.5px solid " + cat.color;
+  inp.placeholder = "Nueva tarea...";
+  const ok = document.createElement("button");
+  ok.className = "add-ok"; ok.style.background = cat.color; ok.textContent = "✓";
+  const cancel = document.createElement("button");
+  cancel.className = "add-cancel"; cancel.textContent = "✕";
+  ok.onclick = () => addItem(cat.id, inp.value);
+  cancel.onclick = () => render();
+  inp.onkeydown = e => { if (e.key === "Enter") addItem(cat.id, inp.value); if (e.key === "Escape") render(); };
+  row.appendChild(inp); row.appendChild(ok); row.appendChild(cancel);
+  catDiv.replaceChild(row, addBtn);
+  inp.focus();
+}
+
+// filters
+document.querySelectorAll(".filter-btn").forEach(btn => {
+  btn.onclick = () => {
+    filter = btn.dataset.filter;
+    document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    render();
+  };
+});
+document.getElementById("clearBtn").onclick = clearCompleted;
+
+// ── Backup: export / import ──
+function exportBackup() {
+  try {
+    const data = JSON.stringify(state);
+    const blob = new Blob([data], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const d = new Date();
+    const stamp = d.getFullYear() + "-" +
+      String(d.getMonth() + 1).padStart(2, "0") + "-" +
+      String(d.getDate()).padStart(2, "0") + "_" +
+      String(d.getHours()).padStart(2, "0") + String(d.getMinutes()).padStart(2, "0");
+    a.href = url;
+    a.download = "mis-listas-backup_" + stamp + ".json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch (e) {
+    alert("No se pudo exportar: " + e.message);
+  }
+}
+
+function importBackup(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data || !Array.isArray(data.categories)) {
+        alert("El archivo no parece un backup válido de Mis Listas.");
+        return;
+      }
+      const n = (data.categories || []).reduce((acc, c) =>
+        acc + (c.items ? c.items.length : 0) +
+        (c.subcats ? c.subcats.reduce((a, s) => a + (s.items ? s.items.length : 0), 0) : 0), 0);
+      if (!confirm("Esto reemplazará TODAS tus listas actuales por el backup (" +
+          data.categories.length + " categorías, " + n + " tareas). ¿Continuar?")) return;
+      state = {
+        categories: data.categories,
+        checked: data.checked || {},
+        collapsed: data.collapsed || {},
+      };
+      editingId = null; editingDescId = null; editingCatId = null;
+      save(); render();
+      alert("Backup importado correctamente.");
+    } catch (err) {
+      alert("No se pudo leer el archivo: " + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+document.getElementById("exportBtn").onclick = exportBackup;
+document.getElementById("importBtn").onclick = () => document.getElementById("importInput").click();
+document.getElementById("importInput").onchange = e => {
+  if (e.target.files && e.target.files[0]) importBackup(e.target.files[0]);
+  e.target.value = "";
+};
+
+// lightbox controls — with pinch zoom & pan
+function applyLbTransform() {
+  const im = document.getElementById("lbImg");
+  im.style.transform = `translate(${lbTx}px, ${lbTy}px) scale(${lbScale})`;
+  im.classList.toggle("zoomed", lbScale > 1.02);
+}
+function resetLbZoom() {
+  lbScale = 1; lbTx = 0; lbTy = 0;
+  applyLbTransform();
+}
+
+document.getElementById("lbClose").onclick = closeLightbox;
+document.getElementById("lbPrev").onclick = () => { lbIndex = (lbIndex - 1 + lbImages.length) % lbImages.length; updateLightbox(); };
+document.getElementById("lbNext").onclick = () => { lbIndex = (lbIndex + 1) % lbImages.length; updateLightbox(); };
+document.getElementById("lightbox").onclick = e => { if (e.target.id === "lightbox" && lbScale <= 1.02) closeLightbox(); };
+
+(function setupLbZoom() {
+  const im = document.getElementById("lbImg");
+  let mode = null;             // 'pan' | 'pinch'
+  let startTx = 0, startTy = 0, startX = 0, startY = 0;
+  let startDist = 0, startScale = 1;
+  let lastTap = 0;
+
+  function dist(t1, t2) {
+    const dx = t1.clientX - t2.clientX, dy = t1.clientY - t2.clientY;
+    return Math.hypot(dx, dy);
+  }
+  function clampPan() {
+    // limit panning so the image doesn't run away
+    const r = im.getBoundingClientRect();
+    const maxX = Math.max(0, (r.width - window.innerWidth) / 2 + 40);
+    const maxY = Math.max(0, (r.height - window.innerHeight) / 2 + 40);
+    lbTx = Math.max(-maxX, Math.min(maxX, lbTx));
+    lbTy = Math.max(-maxY, Math.min(maxY, lbTy));
+  }
+
+  // ── Touch ──
+  im.addEventListener("touchstart", e => {
+    if (e.touches.length === 2) {
+      mode = "pinch";
+      startDist = dist(e.touches[0], e.touches[1]);
+      startScale = lbScale;
+    } else if (e.touches.length === 1) {
+      // double-tap detect
+      const now = Date.now();
+      if (now - lastTap < 300) {
+        if (lbScale > 1.02) resetLbZoom();
+        else { lbScale = 2.5; applyLbTransform(); }
+        lastTap = 0;
+        e.preventDefault();
+        return;
+      }
+      lastTap = now;
+      if (lbScale > 1.02) {
+        mode = "pan";
+        startX = e.touches[0].clientX; startY = e.touches[0].clientY;
+        startTx = lbTx; startTy = lbTy;
+      }
+    }
+    e.stopPropagation();
+  }, { passive: false });
+
+  im.addEventListener("touchmove", e => {
+    if (mode === "pinch" && e.touches.length === 2) {
+      const d = dist(e.touches[0], e.touches[1]);
+      lbScale = Math.max(1, Math.min(5, startScale * (d / startDist)));
+      if (lbScale <= 1.02) { lbTx = 0; lbTy = 0; }
+      applyLbTransform();
+      e.preventDefault();
+    } else if (mode === "pan" && e.touches.length === 1) {
+      lbTx = startTx + (e.touches[0].clientX - startX);
+      lbTy = startTy + (e.touches[0].clientY - startY);
+      clampPan();
+      applyLbTransform();
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  im.addEventListener("touchend", e => {
+    if (e.touches.length === 0) mode = null;
+    if (lbScale <= 1.02) resetLbZoom();
+  });
+
+  // ── Desktop: click toggles, wheel zooms ──
+  im.addEventListener("click", e => {
+    e.stopPropagation();
+    if ("ontouchstart" in window) return; // skip on touch devices (handled above)
+    if (lbScale > 1.02) resetLbZoom();
+    else { lbScale = 2; applyLbTransform(); }
+  });
+  im.addEventListener("wheel", e => {
+    e.preventDefault();
+    lbScale = Math.max(1, Math.min(5, lbScale - e.deltaY * 0.002));
+    if (lbScale <= 1.02) { lbTx = 0; lbTy = 0; }
+    applyLbTransform();
+  }, { passive: false });
+})();
+
+document.addEventListener("keydown", e => {
+  if (!document.getElementById("lightbox").classList.contains("open")) return;
+  if (e.key === "Escape") closeLightbox();
+  if (e.key === "ArrowLeft") { lbIndex = (lbIndex - 1 + lbImages.length) % lbImages.length; updateLightbox(); }
+  if (e.key === "ArrowRight") { lbIndex = (lbIndex + 1) % lbImages.length; updateLightbox(); }
+});
+
+render();
+
+// Register service worker for offline / installable PWA
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
