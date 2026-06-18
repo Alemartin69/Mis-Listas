@@ -26,6 +26,11 @@
   .progress-fill { height: 100%; border-radius: 99px; background: #f59e0b; transition: width .4s ease; width: 0%; }
   .container { max-width: 640px; margin: 0 auto; padding: 0 14px; }
   .filters { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; align-items: center; }
+  .search-row { display: flex; gap: 8px; margin-bottom: 14px; }
+  .search-input { flex: 1; padding: 11px 14px; border-radius: 12px; border: 1.5px solid #e2e8f0; font-size: 14px; outline: none; color: #1e293b; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .search-input:focus { border-color: #94a3b8; }
+  .compact-btn { width: 46px; flex-shrink: 0; border-radius: 12px; border: 1.5px solid #e2e8f0; background: #fff; cursor: pointer; font-size: 18px; color: #475569; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .compact-btn.active { background: #1e293b; color: #fff; border-color: #1e293b; }
   .filter-btn { padding: 7px 15px; border-radius: 99px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; background: #fff; color: #64748b; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
   .filter-btn.active { background: #1e293b; color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.18); }
   .clear-btn { margin-left: auto; padding: 7px 15px; border-radius: 99px; border: 1.5px solid #fca5a5; background: #fff; color: #dc2626; cursor: pointer; font-size: 12px; font-weight: 600; }
@@ -167,6 +172,10 @@
 </div>
 
 <div class="container">
+  <div class="search-row">
+    <input type="text" id="searchInput" class="search-input" placeholder="🔍 Buscar tareas..." autocomplete="off">
+    <button class="compact-btn" id="compactBtn" title="Modo compacto">☰</button>
+  </div>
   <div class="filters">
     <button class="filter-btn active" data-filter="all">Todas</button>
     <button class="filter-btn" data-filter="pending">Pendientes</button>
@@ -224,6 +233,8 @@ const DEFAULT_CATEGORIES = [
 
 let state = load() || { categories: DEFAULT_CATEGORIES, checked: {} };
 let filter = "all";
+let compactMode = false;
+let searchTerm = "";
 let editingId = null;
 let editingDescId = null;
 
@@ -295,6 +306,24 @@ function save() {
 }
 
 function toggle(id) { state.checked[id] = !state.checked[id]; save(); render(); }
+
+// ── search match helpers ──
+function taskMatches(it) {
+  if (!searchTerm) return true;
+  return (it.text || "").toLowerCase().includes(searchTerm) ||
+         (it.desc || "").toLowerCase().includes(searchTerm);
+}
+function subcatMatches(sc) {
+  if (!searchTerm) return true;
+  if ((sc.label || "").toLowerCase().includes(searchTerm)) return true;
+  return (sc.items || []).some(taskMatches);
+}
+function categoryMatches(cat) {
+  if (!searchTerm) return true;
+  if ((cat.label || "").toLowerCase().includes(searchTerm)) return true;
+  if ((cat.items || []).some(taskMatches)) return true;
+  return (cat.subcats || []).some(subcatMatches);
+}
 
 // Find a task-container (category OR subcategory) by id
 function findContainer(id) {
@@ -787,6 +816,10 @@ function render() {
     if (filter === "done")    items = items.filter(i =>  state.checked[i.id]);
     if (filter !== "all" && items.length === 0) return;
 
+    // During search, hide categories that don't match (by name, own tasks, or subcats)
+    if (searchTerm && !categoryMatches(cat)) return;
+    const catNameMatchTop = !!(searchTerm && (cat.label || "").toLowerCase().includes(searchTerm));
+
     const catDone = cat.items.filter(i => state.checked[i.id]).length;
     const allDone = cat.items.length > 0 && catDone === cat.items.length;
 
@@ -925,12 +958,16 @@ function render() {
     // ── body (collapsible) ──
     const body = document.createElement("div");
     body.className = "cat-body";
-    if (collapsed) body.style.display = "none";
+    if (collapsed && !searchTerm) body.style.display = "none";
 
-    appendTasks(cat, body, { skipAddBtn: true });
+    appendTasks(cat, body, { skipAddBtn: true, searchShowAll: catNameMatchTop });
 
     // ── subcategories ──
+    const catNameMatch = catNameMatchTop;
     (cat.subcats || []).forEach(sc => {
+      // If the category name matched, show all subcats. Otherwise show subcats whose
+      // name matches or that contain matching tasks.
+      if (searchTerm && !catNameMatch && !subcatMatches(sc)) return;
       const scCollapsed = !!(state.collapsed && state.collapsed[sc.id]);
       const scDiv = document.createElement("div");
       scDiv.className = "subcat";
@@ -1030,8 +1067,9 @@ function render() {
 
       const scBody = document.createElement("div");
       scBody.className = "cat-body";
-      if (scCollapsed) scBody.style.display = "none";
-      appendTasks(sc, scBody, { addLabel: "Agregar tarea a " + sc.label });
+      if (scCollapsed && !searchTerm) scBody.style.display = "none";
+      const scNameMatch = !!(searchTerm && (sc.label || "").toLowerCase().includes(searchTerm));
+      appendTasks(sc, scBody, { addLabel: "Agregar tarea a " + sc.label, searchShowAll: (catNameMatch || scNameMatch) });
       scDiv.appendChild(scBody);
 
       body.appendChild(scDiv);
@@ -1082,6 +1120,9 @@ function appendTasks(cont, body, opts) {
     let items = cont.items || [];
     if (filter === 'pending') items = items.filter(i => !state.checked[i.id]);
     if (filter === 'done')    items = items.filter(i =>  state.checked[i.id]);
+    if (searchTerm && !opts.searchShowAll) {
+      items = items.filter(taskMatches);
+    }
     const attachAllowed = attachEffective(cont.id); // considers parent category
     // items
     if (cont.items.length === 0 && filter === "all") {
@@ -1184,6 +1225,7 @@ function appendTasks(cont, body, opts) {
 
       itemDiv.appendChild(row);
 
+      if (!compactMode) {
       // description (optional, editable)
       const descWrap = document.createElement("div");
       descWrap.className = "desc-wrap";
@@ -1297,6 +1339,7 @@ function appendTasks(cont, body, opts) {
       }
 
       if (linksWrap.children.length) itemDiv.appendChild(linksWrap);
+      } // end if(!compactMode)
       body.appendChild(itemDiv);
     });
 
@@ -1427,6 +1470,31 @@ document.querySelectorAll(".filter-btn").forEach(btn => {
   };
 });
 document.getElementById("clearBtn").onclick = clearCompleted;
+
+// Search
+let _searchTimer = null;
+document.getElementById("searchInput").addEventListener("input", e => {
+  searchTerm = e.target.value.trim().toLowerCase();
+  // Debounce re-render so typing isn't interrupted
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(() => {
+    const active = document.activeElement === document.getElementById("searchInput");
+    render();
+    if (active) {
+      const si = document.getElementById("searchInput");
+      si.focus();
+      const len = si.value.length;
+      si.setSelectionRange(len, len);
+    }
+  }, 180);
+});
+
+// Compact mode toggle
+document.getElementById("compactBtn").onclick = () => {
+  compactMode = !compactMode;
+  document.getElementById("compactBtn").classList.toggle("active", compactMode);
+  render();
+};
 
 // ── Backup: export / import ──
 function exportBackup() {

@@ -1,5 +1,5 @@
 // Mis Listas — service worker
-const CACHE = "mis-listas-v1";
+const CACHE = "mis-listas-v3";
 const ASSETS = [
   "./",
   "./index.html",
